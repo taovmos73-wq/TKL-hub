@@ -1,145 +1,277 @@
---========================================================--
--- 🔥 TKL Hub - All in one script for Blox Fruits
--- Made by GPT + User Cao Phúc
---========================================================--
+-- TKL Hub (SAFE TEMPLATE) — dùng trong chính game của bạn
+-- Yêu cầu: Bạn tag đối tượng trong Studio bằng CollectionService:
+--  - "Fruit" cho item muốn nhặt (Part/Model có PrimaryPart)
+--  - "Enemy" cho NPC thường
+--  - "Boss" cho NPC boss
+-- Ở Player có thể đặt Attribute Bool "IsAdmin" để demo tạm dừng
 
--- 🪪 Khởi tạo GUI
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
-local CoreGui = game:GetService("CoreGui")
+local RunService = game:GetService("RunService")
+local CollectionService = game:GetService("CollectionService")
+local TweenService = game:GetService("TweenService")
+local StarterGui = game:GetService("StarterGui")
 
--- GUI chính
-local ScreenGui = Instance.new("ScreenGui", CoreGui)
+-- ========== GUI ==========
+local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "TKLHub"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = game:GetService("CoreGui")
 
--- Nút bật/tắt menu (ảnh bạn đưa)
-local ToggleButton = Instance.new("ImageButton")
-ToggleButton.Parent = ScreenGui
-ToggleButton.Size = UDim2.new(0,60,0,60)
-ToggleButton.Position = UDim2.new(0,10,0,200)
-ToggleButton.Image = "rbxassetid://1234567890" -- 🔥 đổi ID ảnh bạn muốn
+-- Nút ảnh bật/tắt
+local ToggleBtn = Instance.new("ImageButton")
+ToggleBtn.Name = "Toggle"
+ToggleBtn.Size = UDim2.new(0,64,0,64)
+ToggleBtn.Position = UDim2.new(1,-80,1,-80)
+ToggleBtn.AnchorPoint = Vector2.new(1,1)
+ToggleBtn.BackgroundTransparency = 1
+ToggleBtn.Image = "rbxassetid://1234567890" -- TODO: đổi sang asset ảnh của bạn
+ToggleBtn.Parent = ScreenGui
 
 -- Khung menu
-local MainFrame = Instance.new("Frame")
-MainFrame.Parent = ScreenGui
-MainFrame.Size = UDim2.new(0,300,0,400)
-MainFrame.Position = UDim2.new(0,80,0,200)
-MainFrame.BackgroundColor3 = Color3.fromRGB(40,40,40)
-MainFrame.Visible = false
-MainFrame.Active = true
-MainFrame.Draggable = true
+local Main = Instance.new("Frame")
+Main.Size = UDim2.new(0,360,0,320)
+Main.Position = UDim2.new(1,-380,1,-380)
+Main.AnchorPoint = Vector2.new(1,1)
+Main.BackgroundColor3 = Color3.fromRGB(30,30,35)
+Main.BorderSizePixel = 0
+Main.Visible = false
+Main.Parent = ScreenGui
 
--- Tiêu đề
-local Title = Instance.new("TextLabel", MainFrame)
+local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1,0,0,40)
-Title.BackgroundColor3 = Color3.fromRGB(20,20,20)
+Title.BackgroundColor3 = Color3.fromRGB(45,45,55)
+Title.BorderSizePixel = 0
+Title.Text = "⚡ TKL Hub (SAFE)"
 Title.TextColor3 = Color3.fromRGB(255,255,255)
-Title.Text = "🔥 TKL Hub"
-Title.TextScaled = true
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 18
+Title.Parent = Main
 
--- Tạo container nút
-local ButtonContainer = Instance.new("Frame", MainFrame)
-ButtonContainer.Size = UDim2.new(1,0,1,-40)
-ButtonContainer.Position = UDim2.new(0,0,0,40)
-ButtonContainer.BackgroundTransparency = 1
-
--- Hàm tạo nút
-local function CreateButton(name, callback)
-    local btn = Instance.new("TextButton", ButtonContainer)
-    btn.Size = UDim2.new(1,-20,0,40)
-    btn.Position = UDim2.new(0,10,0,#ButtonContainer:GetChildren()*45)
-    btn.BackgroundColor3 = Color3.fromRGB(70,70,70)
+local function mkToggle(text, order, onToggle)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1,-20,0,36)
+    btn.Position = UDim2.new(0,10,0,50 + (order*42))
+    btn.BackgroundColor3 = Color3.fromRGB(60,60,70)
     btn.TextColor3 = Color3.fromRGB(255,255,255)
-    btn.Text = name
-    btn.TextScaled = true
-    btn.MouseButton1Click:Connect(callback)
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 16
+    btn.Text = text .. " (Tắt)"
+    btn.AutoButtonColor = true
+    btn.Parent = Main
+    local state = false
+    btn.MouseButton1Click:Connect(function()
+        state = not state
+        btn.Text = text .. (state and " (Bật)" or " (Tắt)")
+        onToggle(state)
+    end)
+    return function() return state end, function(v) state=v; btn.Text=text..(state and " (Bật)" or " (Tắt)") end
 end
 
---========================================================--
--- 🔹 Các chức năng
---========================================================--
-
-local autoFarm = false
-local autoFruit = false
-local autoRaid = false
-local autoSwitch = true -- auto ưu tiên trái ác quỷ / boss
-local adminCheck = true
-
--- Auto Farm
-CreateButton("⚔️ Auto Farm (ON/OFF)", function()
-    autoFarm = not autoFarm
-    print("Auto Farm:", autoFarm)
+ToggleBtn.MouseButton1Click:Connect(function()
+    Main.Visible = not Main.Visible
 end)
 
--- Auto Fruit
-CreateButton("🍏 Auto Collect Fruit (ON/OFF)", function()
-    autoFruit = not autoFruit
-    print("Auto Fruit:", autoFruit)
-end)
-
--- Auto Raid
-CreateButton("💀 Auto Raid (ON/OFF)", function()
-    autoRaid = not autoRaid
-    print("Auto Raid:", autoRaid)
-end)
-
--- Auto Switch
-CreateButton("🔄 Auto Switch Mode (ON/OFF)", function()
-    autoSwitch = not autoSwitch
-    print("Auto Switch:", autoSwitch)
-end)
-
--- Thoát game
-CreateButton("🚪 Thoát Game", function()
-    LocalPlayer:Kick("Bạn đã out game từ TKLHub")
-end)
-
---========================================================--
--- 🔹 Toggle Menu
---========================================================--
-ToggleButton.MouseButton1Click:Connect(function()
-    MainFrame.Visible = not MainFrame.Visible
-end)
-
---========================================================--
--- 🔥 Admin Detection
---========================================================--
-local Admins = {
-    [34612345] = true, -- ví dụ
-    [11223344] = true, 
+-- ========== TRẠNG THÁI ==========
+local S = {
+    AutoFarm = false,
+    AutoCollect = false,
+    AutoBoss = false,
+    AutoSwitch = true, -- ưu tiên Collect > Boss > Farm
+    StealthPause = false, -- tạm dừng khi có Admin (game của bạn)
 }
 
-local WarningGui = Instance.new("TextLabel", ScreenGui)
-WarningGui.Size = UDim2.new(1,0,0,50)
-WarningGui.Position = UDim2.new(0,0,0,0)
-WarningGui.BackgroundColor3 = Color3.fromRGB(255,0,0)
-WarningGui.TextColor3 = Color3.fromRGB(255,255,255)
-WarningGui.TextScaled = true
-WarningGui.Text = ""
-WarningGui.Visible = false
-
-local function StopAll()
-    autoFarm = false
-    autoFruit = false
-    autoRaid = false
-    print("⚠️ Stop tất cả chức năng vì phát hiện Admin!")
+-- ========== TIỆN ÍCH ==========
+local function getChar(plr)
+    plr = plr or LocalPlayer
+    return plr.Character or plr.CharacterAdded:Wait()
 end
 
-local function CheckAdmin(plr)
-    if Admins[plr.UserId] and adminCheck then
-        WarningGui.Text = "⚠️ ADMIN " .. plr.Name .. " ĐANG ONLINE!"
-        WarningGui.Visible = true
-        StopAll()
-        task.wait(3)
-        LocalPlayer:Kick("Out game vì phát hiện Admin!")
+local function root(cfChar)
+    return cfChar:FindFirstChild("HumanoidRootPart")
+end
+
+local function primary(modelOrPart)
+    if modelOrPart:IsA("Model") then
+        return modelOrPart.PrimaryPart or modelOrPart:FindFirstChildWhichIsA("BasePart")
+    elseif modelOrPart:IsA("BasePart") then
+        return modelOrPart
     end
 end
 
-Players.PlayerAdded:Connect(CheckAdmin)
-for _,plr in pairs(Players:GetPlayers()) do
-    CheckAdmin(plr)
+local function distance(a,b)
+    if not a or not b then return math.huge end
+    return (a.Position - b.Position).Magnitude
 end
 
---========================================================--
-print("🔥 TKL Hub đã khởi động thành công!")
---========================================================--
+local function moveTo(targetPos)
+    local ch = getChar()
+    local hum = ch:FindFirstChildOfClass("Humanoid")
+    if hum and targetPos then
+        hum:MoveTo(targetPos)
+        hum.MoveToFinished:Wait()
+    end
+end
+
+local function tweenTo(targetPos, speed)
+    local ch = getChar()
+    local hrp = root(ch)
+    if not hrp or not targetPos then return end
+    local dist = (hrp.Position - targetPos).Magnitude
+    local t = TweenService:Create(hrp, TweenInfo.new(math.clamp(dist/(speed or 40),0.1,5), Enum.EasingStyle.Quad), {CFrame = CFrame.new(targetPos)})
+    t:Play()
+    t.Completed:Wait()
+end
+
+local function nearestTagged(tag)
+    local ch = getChar()
+    local hrp = root(ch)
+    local best, bestD = nil, math.huge
+    for _,obj in ipairs(CollectionService:GetTagged(tag)) do
+        local p = primary(obj)
+        if p and p:IsDescendantOf(workspace) then
+            local d = distance(hrp, p)
+            if d < bestD then
+                best, bestD = obj, d
+            end
+        end
+    end
+    return best, bestD
+end
+
+-- ========== LOOP LOGIC ==========
+local taskToken = {collect={}, boss={}, farm={}}
+
+local function safeLoop(stepFn, gateFn, tokenTable, key, interval)
+    coroutine.wrap(function()
+        tokenTable[key] = {}
+        local myToken = tokenTable[key]
+        while gateFn() do
+            if S.StealthPause then break end
+            stepFn()
+            task.wait(interval or 0.2)
+            if myToken ~= tokenTable[key] then break end -- cancel if restarted
+        end
+    end)()
+end
+
+-- AutoCollect (Fruit)
+local function startCollect()
+    safeLoop(function()
+        local target = nearestTagged("Fruit")
+        if target then
+            local p = primary(target)
+            if p then
+                -- di chuyển “người chơi” tới item để nhặt (do bạn tự viết trigger Touch/ProximityPrompt)
+                tweenTo(p.Position + Vector3.new(0,3,0), 60)
+                -- ví dụ kích hoạt ProximityPrompt nếu có
+                local prompt = target:FindFirstChildOfClass("ProximityPrompt", true)
+                if prompt then
+                    fireproximityprompt(prompt)
+                end
+            end
+        end
+    end, function() return S.AutoCollect and not S.StealthPause end, taskToken, "collect", 0.25)
+end
+
+-- AutoBoss
+local function startBoss()
+    safeLoop(function()
+        local boss = nearestTagged("Boss")
+        if boss then
+            local p = primary(boss)
+            if p then
+                tweenTo(p.Position + Vector3.new(0,5,0), 50)
+                -- giả lập tấn công: tới gần boss
+                moveTo(p.Position)
+                -- bạn có thể thêm logic gây sát thương hợp pháp trong game của bạn
+            end
+        end
+    end, function() return S.AutoBoss and not S.StealthPause and not S.AutoCollect end, taskToken, "boss", 0.25)
+end
+
+-- AutoFarm (Enemy)
+local function startFarm()
+    safeLoop(function()
+        local enemy = nearestTagged("Enemy")
+        if enemy then
+            local p = primary(enemy)
+            if p then
+                tweenTo(p.Position + Vector3.new(0,5,0), 45)
+                moveTo(p.Position)
+                -- thêm combat hợp pháp trong game của bạn tại đây
+            end
+        end
+    end, function()
+        if S.StealthPause then return false end
+        if S.AutoSwitch then
+            -- ưu tiên: Collect > Boss > Farm
+            return S.AutoFarm and not S.AutoCollect and not S.AutoBoss
+        else
+            return S.AutoFarm
+        end
+    end, taskToken, "farm", 0.25)
+end
+
+-- ========== NÚT / TOGGLE ==========
+local getAF, setAF   = mkToggle("🔄 Auto Farm", 0, function(v) S.AutoFarm=v; if v then startFarm() end end)
+local getAC, setAC   = mkToggle("🍏 Auto Collect", 1, function(v) S.AutoCollect=v; if v then startCollect() end end)
+local getAB, setAB   = mkToggle("🗡 Auto Boss", 2, function(v) S.AutoBoss=v; if v then startBoss() end end)
+local getAS, setAS   = mkToggle("🔀 Auto Switch", 3, function(v) S.AutoSwitch=v end)
+
+-- Anti-AFK (vô hại)
+local vu = game:GetService("VirtualUser")
+Players.LocalPlayer.Idled:Connect(function()
+    vu:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame); task.wait(1)
+    vu:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+end)
+
+-- ========== PAUSE KHI CÓ ADMIN (TRONG GAME CỦA BẠN) ==========
+-- Không phải “anti-ban”; đây chỉ là cơ chế **tạm dừng** nếu bạn phát hiện
+-- người có quyền trong chính experience của bạn (ví dụ teammate QA).
+local Banner = Instance.new("TextLabel")
+Banner.Size = UDim2.new(1,0,0,30)
+Banner.Position = UDim2.new(0,0,0,40)
+Banner.BackgroundColor3 = Color3.fromRGB(120,30,30)
+Banner.TextColor3 = Color3.fromRGB(255,255,255)
+Banner.Font = Enum.Font.Gotham
+Banner.TextSize = 14
+Banner.Text = ""
+Banner.Visible = false
+Banner.Parent = Main
+
+local function setStealthPause(pause, reason)
+    S.StealthPause = pause
+    Banner.Visible = pause
+    Banner.Text = pause and ("⏸ Tạm dừng: "..(reason or "Admin hiện diện")) or ""
+end
+
+local function onPlayerAdded(plr)
+    -- Ví dụ: bạn tự gán Attribute "IsAdmin" = true cho người test/admin trong game của bạn
+    local function check()
+        if plr:GetAttribute("IsAdmin") then
+            setStealthPause(true, "Admin: "..plr.Name)
+        end
+    end
+    check()
+    plr.AttributeChanged:Connect(function(attr)
+        if attr=="IsAdmin" then check() end
+    end)
+end
+Players.PlayerAdded:Connect(onPlayerAdded)
+for _,p in ipairs(Players:GetPlayers()) do onPlayerAdded(p) end
+
+-- Hotkeys nhanh
+local UIS = game:GetService("UserInputService")
+UIS.InputBegan:Connect(function(input, gp)
+    if gp then return end
+    if input.KeyCode == Enum.KeyCode.L then
+        Main.Visible = not Main.Visible
+    elseif input.KeyCode == Enum.KeyCode.K then
+        setAS(not getAS())
+    elseif input.KeyCode == Enum.KeyCode.J then
+        setStealthPause(not S.StealthPause, "Toggle thủ công (J)")
+    end
+end)
+
+StarterGui:SetCore("SendNotification", {Title="TKL Hub (SAFE)", Text="Đã khởi động trong game của bạn", Duration=5})
